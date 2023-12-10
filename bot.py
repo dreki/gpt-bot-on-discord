@@ -97,23 +97,16 @@ async def on_message(message):
 
         conversation_history = load_conversation_history(message.author.id)
 
-        # Check if the user's ID is in the conversation history
-        # if message.author.id not in conversation_history:
-        #     conversation_history[message.author.id] = [GPT_CONTEXT_MESSAGE]
-
         # Add the user's message to the conversation history
-        # conversation_history[message.author.id].append({"role": "user", "content": user_input})
         conversation_history.append({"role": "user", "content": user_input})
 
         response = openai_client.chat.completions.create(
             model="gpt-4-1106-preview",
-            # messages=conversation_history[message.author.id]
             messages=conversation_history
         )
 
         # Add the bot's response to the conversation history
         bot_response = response.choices[0].message.content
-        # conversation_history[message.author.id].append({"role": "assistant", "content": bot_response})
         conversation_history.append({"role": "assistant", "content": bot_response})
 
         # Save the conversation history
