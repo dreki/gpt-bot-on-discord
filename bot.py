@@ -20,6 +20,8 @@ client = discord.Client(intents=intents)
 
 openai_client = OpenAI(api_key=OPEN_AI_KEY)
 
+conversation_history = {}
+
 
 @client.event
 async def on_ready():
@@ -41,30 +43,26 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # print(f"> client.user.id: {client.user.id} (type: {type(client.user.id)}); mention ID types: {[type(m.id) for m in message.mentions]}")
-    # if message.content.startswith('$ask'):  # Example command to trigger GPT
     if client.user.id in [m.id for m in message.mentions]:  # Check if the bot is mentioned
-        # user_input = message.content[len('$ask '):])
-
-        # Remove the mention from the message
         user_input = message.content.replace(f'<@{client.user.id}>', '').strip()
 
-        # gpt_response = openai.ChatCompletion.create(
-        #     model="gpt-4-1106-preview",  # GPT-4 Turbo
-        #     messages=[
-        #         GPT_CONTEXT_MESSAGE,
-        #         {"role": "user", "content": user_input}
-        #     ]
-        # )
-        # await message.channel.send(gpt_response.choices[0].message.content)
+        # Check if the user's ID is in the conversation history
+        if message.author.id not in conversation_history:
+            conversation_history[message.author.id] = [GPT_CONTEXT_MESSAGE]
+
+        # Add the user's message to the conversation history
+        conversation_history[message.author.id].append({"role": "user", "content": user_input})
 
         response = openai_client.chat.completions.create(
             model="gpt-4-1106-preview",
-            messages=[GPT_CONTEXT_MESSAGE, {"role": "user", "content": user_input}]
+            messages=conversation_history[message.author.id]
         )
-        # return response.choices[0].message.content.strip()
-        # await message.channel.send(response.choices[0].message.content)
-        await message.reply(response.choices[0].message.content)
+
+        # Add the bot's response to the conversation history
+        bot_response = response.choices[0].message.content
+        conversation_history[message.author.id].append({"role": "assistant", "content": bot_response})
+
+        await message.reply(bot_response)
 
 
 client.run(DISCORD_BOT_KEY)
